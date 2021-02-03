@@ -10,7 +10,7 @@ This code should generate analysis result files in the `out` directory. Example 
   1. Virus Virus from which the Env was derived
   2. AlleleA First allele in the comparison
   3. AlleleB Second allele in the comparison
-  4. p(fold change < 1): The posterior probability that the fold difference in odds between allele A and allele B is less than 1
+  4. p(fold change < 1): The posterior probability that the fold change in odds between allele A and allele B is less than 1
   5. Estimated fold change: The posterior mean estimate for the fold change in odds between allele A and allele B
   6. Lower 95% CrI: The lower limit of the estimated 95% credible interval for the fold change in odds between allele A and allele B
   7. Upper 95% CrI: The upper limit of the estimated 95% credible interval for the fold change in odds between allele A and allele B
