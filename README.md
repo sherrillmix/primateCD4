@@ -16,6 +16,6 @@ This code should generate analysis result files in the `out` directory. Example 
   7. Upper 95% CrI: The upper limit of the estimated 95% credible interval for the fold change in odds between allele A and allele B
 * OtherDiffs.csv: As above but for other primate alleles
 * GorillaDiffs.csv: As above but for gorilla alleles
-* N15T.csv: As above but comparing the estimated effects of changing N15T in AHSM
+* N15T.csv: As above but comparing the estimated effects of changing N15T in the AHSM gorilla allele
 
 
