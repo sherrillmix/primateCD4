@@ -58,7 +58,6 @@ out$mean[out$mean==out$lower&outPrep$censor]<-sprintf('>%s*',out$lower[out$mean=
 out$p<-sigFig(out$p)
 out[outPrep$p<.00001,'p']<-'<0.00001'
 colnames(out)<-c('Group','Virus','AlleleA','AlleleB','p(fold change < 1)','Estimated fold change','Lower 95% CrI','Upper 95% CrI')
-write.csv(out,'out/allDiffs.csv',row.names=FALSE)
 for(ii in unique(out$Group))write.csv(out[out$Group==ii,-1],sprintf('out/%sDiffs.csv',ii),row.names=FALSE)
 
 mat<-as.matrix(fitGor$fit)
@@ -76,26 +75,3 @@ out<-out[,c('virus','AlleleA','AlleleB','p','estimate','lower','upper')]
 colnames(out)<-c('Virus','AlleleA','AlleleB','p(fold change < 1)','Estimated fold change','Lower 95% CrI','Upper 95% CrI')
 write.csv(out,'out/N15T.csv',row.names=FALSE)
 
-mat<-as.matrix(fitBono$fit)
-stats<-as.data.frame(rbind('Overall'=crIMean(mat[,'alleleMeans[3]']-mat[,'alleleMeans[2]']),do.call(rbind,lapply(fitBono$virusId,function(xx)crIMean(mat[,sprintf('alleleVirus[%d,3]',xx)]-mat[,sprintf('alleleVirus[%d,2]',xx)])))))
-colnames(stats)<-c('lower','upper','estimate','p')
-stats$virus<-rownames(stats)
-out<-stats[,c('virus','lower','upper','estimate','p')]
-out[,c('lower','upper','estimate')]<-apply(exp(out[,c('lower','upper','estimate')]),2,sigFig)
-out[,c('p')]<-apply(out[,c('p'),drop=FALSE],2,sigFig)
-out[stats$p<.00001,'p']<-'<0.00001'
-write.csv(out,'out/I83T83.csv',row.names=FALSE)
-
-mat<-as.matrix(fitBono$fit)
-stats<-do.call(rbind,lapply(2:3,function(yy){
-  out<-as.data.frame(rbind('Overall'=crIMean(mat[,'alleleMeans[1]']-mat[,sprintf('alleleMeans[%d]',yy)]),do.call(rbind,lapply(fitBono$virusId,function(xx)crIMean(mat[,sprintf('alleleVirus[%d,1]',xx)]-mat[,sprintf('alleleVirus[%d,%d]',xx,yy)])))))
-  out$allele<-names(fitBono$alleleId)[yy]
-  out$virus<-rownames(out)
-  out
-}))
-colnames(stats)<-c('lower','upper','estimate','p','allele','virus')
-out<-stats[,c('allele','virus','lower','upper','estimate','p')]
-out[,c('lower','upper','estimate')]<-apply(exp(out[,c('lower','upper','estimate')]),2,sigFig)
-out[,c('p')]<-apply(out[,c('p'),drop=FALSE],2,sigFig)
-out[stats$p<.00001,'p']<-'<0.00001'
-write.csv(out,'out/Human_vs_I83T83.csv',row.names=FALSE)
