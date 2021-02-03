@@ -26,16 +26,6 @@ mocks<-c(gor[grepl('Mock',gor$virus)&!is.na(gor$rep),'rep'],monk[monk$virus=='Mo
 fitMonk<-dnar::withAs(xx=monk[monk$virus!='Mock'&!is.na(monk$rep),],fitModel(xx$virus,xx$allele,xx$species,xx$repNo0,xx$date,mocks,modAllele,chains=50,nIter=50000,thin=4,logFunc=logit))
 fitGor<-dnar::withAs(xx=gor[!grepl('Mock',gor$virus)&!is.na(gor$rep)&!grepl('Bonobo',gor$allele),],fitModel(xx$virus,ifelse(xx$allele=='AHSM N15T','AHSM',xx$allele),xx$species,xx$rep,xx$date,mocks,modAlleleWithMods,ifelse(xx$allele=='AHSM N15T','N15T','Unmodified'),chains=50,nIter=50000,thin=4,logFunc=logit))
 fitBono<-dnar::withAs(xx=gor[!grepl('Mock',gor$virus)&!is.na(gor$rep)&grepl('Bonobo|Human',gor$allele),],fitModel(xx$virus,xx$allele,xx$species,xx$rep,xx$date,mocks,modAllele,chains=50,nIter=50000,thin=4,logFunc=logit))
-if(!file.exists('work/fitMonk.Rdat')){
-  message('Saving data')
-  if(!dir.exists('work'))dir.create('work')
-  save(fitMonk,file='work/fitMonk.Rdat')
-  save(fitGor,file='work/fitGor.Rdat')
-  save(fitBono,file='work/fitBono.Rdat')
-}else{
-  message('Not overwriting save')
-}
-
 
 monkDiffs<-getDiffs(fitMonk)
 monkDiffs$group<-'Other'
@@ -43,6 +33,7 @@ gorDiffs<-getDiffs(fitGor)
 gorDiffs$group<-'Gorilla'
 bonoDiffs<-getDiffs(fitBono)
 bonoDiffs$group<-'Bonobo'
+
 out<-outPrep<-rbind(monkDiffs,gorDiffs,bonoDiffs)[,c('group','virus','all1','all2','p','mean','lower','upper')]
 rownames(out)<-NULL
 outPrep$censor<-out$mean>log(1000)|((out$upper-out$lower)>5&out$lower>0)
