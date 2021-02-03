@@ -24,19 +24,14 @@ mocks<-c(gor[grepl('Mock',gor$virus)&!is.na(gor$rep),'rep'],monk[monk$virus=='Mo
 
 
 fitMonk<-dnar::withAs(xx=monk[monk$virus!='Mock'&!is.na(monk$rep),],fitModel(xx$virus,xx$allele,xx$species,xx$repNo0,xx$date,mocks,modAllele,chains=50,nIter=50000,thin=4,logFunc=logit))
-print(fitMonk$fit,'repSd')
-#fitGor<-dnar::withAs(xx=gor[!grepl('Mock',gor$virus)&!is.na(gor$rep)&!grepl('Bonobo|N15T',gor$allele),],fitModel(xx$virus,xx$allele,xx$species,xx$rep,xx$date,mocks,modAllele,chains=50,nIter=50000,thin=4,logFunc=logit))
-#print(fitGor$fit,'repSd')
 fitGor<-dnar::withAs(xx=gor[!grepl('Mock',gor$virus)&!is.na(gor$rep)&!grepl('Bonobo',gor$allele),],fitModel(xx$virus,ifelse(xx$allele=='AHSM N15T','AHSM',xx$allele),xx$species,xx$rep,xx$date,mocks,modAlleleWithMods,ifelse(xx$allele=='AHSM N15T','N15T','Unmodified'),chains=50,nIter=50000,thin=4,logFunc=logit))
-print(fitGor$fit,'repSd')
-fitCpz<-dnar::withAs(xx=gor[!grepl('Mock',gor$virus)&!is.na(gor$rep)&grepl('Bonobo|Human',gor$allele),],fitModel(xx$virus,xx$allele,xx$species,xx$rep,xx$date,mocks,modAllele,chains=50,nIter=50000,thin=4,logFunc=logit))
-print(fitCpz$fit,'repSd')
-if(!file.exists('work/fitMonk.Rdat'){
+fitBono<-dnar::withAs(xx=gor[!grepl('Mock',gor$virus)&!is.na(gor$rep)&grepl('Bonobo|Human',gor$allele),],fitModel(xx$virus,xx$allele,xx$species,xx$rep,xx$date,mocks,modAllele,chains=50,nIter=50000,thin=4,logFunc=logit))
+if(!file.exists('work/fitMonk.Rdat')){
   message('Saving data')
   if(!dir.exists('work'))dir.create('work')
   save(fitMonk,file='work/fitMonk.Rdat')
   save(fitGor,file='work/fitGor.Rdat')
-  save(fitCpz,file='work/fitCpz.Rdat')
+  save(fitBono,file='work/fitBono.Rdat')
 }else{
   message('Not overwriting save')
 }
@@ -46,11 +41,10 @@ monkDiffs<-getDiffs(fitMonk)
 monkDiffs$group<-'Other'
 gorDiffs<-getDiffs(fitGor)
 gorDiffs$group<-'Gorilla'
-bonoDiffs<-getDiffs(fitCpz)
+bonoDiffs<-getDiffs(fitBono)
 bonoDiffs$group<-'Bonobo'
 out<-outPrep<-rbind(monkDiffs,gorDiffs,bonoDiffs)[,c('group','virus','all1','all2','p','mean','lower','upper')]
 rownames(out)<-NULL
-#censor high values >1000 to lower CrI
 outPrep$censor<-out$mean>log(1000)|((out$upper-out$lower)>5&out$lower>0)
 out[outPrep$censor,'upper']<-out[outPrep$censor,'lower']
 out[outPrep$censor,'mean']<-out[outPrep$censor,'lower']
@@ -82,8 +76,8 @@ out<-out[,c('virus','AlleleA','AlleleB','p','estimate','lower','upper')]
 colnames(out)<-c('Virus','AlleleA','AlleleB','p(fold change < 1)','Estimated fold change','Lower 95% CrI','Upper 95% CrI')
 write.csv(out,'out/N15T.csv',row.names=FALSE)
 
-mat<-as.matrix(fitCpz$fit)
-stats<-as.data.frame(rbind('Overall'=crIMean(mat[,'alleleMeans[3]']-mat[,'alleleMeans[2]']),do.call(rbind,lapply(fitCpz$virusId,function(xx)crIMean(mat[,sprintf('alleleVirus[%d,3]',xx)]-mat[,sprintf('alleleVirus[%d,2]',xx)])))))
+mat<-as.matrix(fitBono$fit)
+stats<-as.data.frame(rbind('Overall'=crIMean(mat[,'alleleMeans[3]']-mat[,'alleleMeans[2]']),do.call(rbind,lapply(fitBono$virusId,function(xx)crIMean(mat[,sprintf('alleleVirus[%d,3]',xx)]-mat[,sprintf('alleleVirus[%d,2]',xx)])))))
 colnames(stats)<-c('lower','upper','estimate','p')
 stats$virus<-rownames(stats)
 out<-stats[,c('virus','lower','upper','estimate','p')]
@@ -91,12 +85,11 @@ out[,c('lower','upper','estimate')]<-apply(exp(out[,c('lower','upper','estimate'
 out[,c('p')]<-apply(out[,c('p'),drop=FALSE],2,sigFig)
 out[stats$p<.00001,'p']<-'<0.00001'
 write.csv(out,'out/I83T83.csv',row.names=FALSE)
-print(out,row.names=FALSE)
 
-mat<-as.matrix(fitCpz$fit)
+mat<-as.matrix(fitBono$fit)
 stats<-do.call(rbind,lapply(2:3,function(yy){
-  out<-as.data.frame(rbind('Overall'=crIMean(mat[,'alleleMeans[1]']-mat[,sprintf('alleleMeans[%d]',yy)]),do.call(rbind,lapply(fitCpz$virusId,function(xx)crIMean(mat[,sprintf('alleleVirus[%d,1]',xx)]-mat[,sprintf('alleleVirus[%d,%d]',xx,yy)])))))
-  out$allele<-names(fitCpz$alleleId)[yy]
+  out<-as.data.frame(rbind('Overall'=crIMean(mat[,'alleleMeans[1]']-mat[,sprintf('alleleMeans[%d]',yy)]),do.call(rbind,lapply(fitBono$virusId,function(xx)crIMean(mat[,sprintf('alleleVirus[%d,1]',xx)]-mat[,sprintf('alleleVirus[%d,%d]',xx,yy)])))))
+  out$allele<-names(fitBono$alleleId)[yy]
   out$virus<-rownames(out)
   out
 }))
@@ -106,4 +99,3 @@ out[,c('lower','upper','estimate')]<-apply(exp(out[,c('lower','upper','estimate'
 out[,c('p')]<-apply(out[,c('p'),drop=FALSE],2,sigFig)
 out[stats$p<.00001,'p']<-'<0.00001'
 write.csv(out,'out/Human_vs_I83T83.csv',row.names=FALSE)
-print(out,row.names=FALSE)
