@@ -164,9 +164,6 @@ stanCodeWithMod<-'
     real modMeans[nModification-1];
     real modSd[nModification-1];
     matrix[nVirus,nModification-1] virusMod;
-    //real<lower=0> alleleSdScale;
-    //real<lower=0> alleleMeansSd;
-    //real alleleMeansMean;
   }
   transformed parameters{
     vector[nRep] beta;
@@ -179,7 +176,6 @@ stanCodeWithMod<-'
   }
   model {
     rep~normal(beta,repSd);
-    //for(ii in 1:nVirus)alleleVirus[ii,]~student_t(tNu,alleleGroup[,virusGroup[ii]],sdWithinSpecies);
     for(ii in 1:nVirus)alleleVirus[ii,]~normal(alleleGroup[,virusGroup[ii]],sdWithinSpecies);
     for(ii in 1:nAllele)alleleGroup[ii,]~normal(alleleMeans[ii],alleleSd*exp(sdMult[ii]));
     for(ii in 2:nExperiment)virusExperiment[,ii-1]~normal(0,5);
@@ -194,7 +190,6 @@ stanCodeWithMod<-'
     modMeans~normal(0,5);
     modSd~gamma(1,.1);
     for(ii in 1:nVirus)virusMod[ii,]~normal(modMeans,modSd);
-    //alleleMeansSd~gamma(1,.1);
   }
 '
 modAlleleWithMods <- stan_model(model_code = stanCodeWithMod)
@@ -226,9 +221,6 @@ stanCode<-'
     vector[nAllele] sdMult;
     vector[nAllele] alleleMeans;
     vector[nVirus] virusMeans;
-    //real<lower=0> alleleSdScale;
-    //real<lower=0> alleleMeansSd;
-    //real alleleMeansMean;
   }
   transformed parameters{
     vector[nRep] beta;
@@ -240,7 +232,6 @@ stanCode<-'
   }
   model {
     rep~normal(beta,repSd);
-    //for(ii in 1:nVirus)alleleVirus[ii,]~student_t(tNu,alleleGroup[,virusGroup[ii]],sdWithinSpecies);
     for(ii in 1:nVirus)alleleVirus[ii,]~normal(alleleGroup[,virusGroup[ii]],sdWithinSpecies);
     for(ii in 1:nAllele)alleleGroup[ii,]~normal(alleleMeans[ii],alleleSd*exp(sdMult[ii]));
     for(ii in 2:nExperiment)virusExperiment[,ii-1]~normal(0,5);
@@ -252,7 +243,6 @@ stanCode<-'
     //alleleMeansMean~normal(-2,5);
     virusMeans~normal(0,2);
     sdWithinSpecies~gamma(1,.1);
-    //alleleMeansSd~gamma(1,.1);
   }
 '
 modAllele <- stan_model(model_code = stanCode)
