@@ -27,11 +27,11 @@ fitMonk<-dnar::withAs(xx=monk[monk$virus!='Mock'&!is.na(monk$rep),],fitModel(xx$
 fitGor<-dnar::withAs(xx=gor[!grepl('Mock',gor$virus)&!is.na(gor$rep)&!grepl('Bonobo',gor$allele),],fitModel(xx$virus,ifelse(xx$allele=='AHSM N15T','AHSM',xx$allele),xx$species,xx$rep,xx$date,mocks,modAlleleWithMods,ifelse(xx$allele=='AHSM N15T','N15T','Unmodified'),chains=50,nIter=50000,thin=4,logFunc=logit))
 fitBono<-dnar::withAs(xx=gor[!grepl('Mock',gor$virus)&!is.na(gor$rep)&grepl('Bonobo|Human',gor$allele),],fitModel(xx$virus,xx$allele,xx$species,xx$rep,xx$date,mocks,modAllele,chains=50,nIter=50000,thin=4,logFunc=logit))
 
-monkDiffs<-getDiffs(fitMonk)
+monkDiffs<-getDiffs(fitMonk,TRUE)
 monkDiffs$group<-'Other'
-gorDiffs<-getDiffs(fitGor)
+gorDiffs<-getDiffs(fitGor,TRUE)
 gorDiffs$group<-'Gorilla'
-bonoDiffs<-getDiffs(fitBono)
+bonoDiffs<-getDiffs(fitBono,TRUE)
 bonoDiffs$group<-'Bonobo'
 
 out<-outPrep<-rbind(monkDiffs,gorDiffs,bonoDiffs)[,c('group','virus','all1','all2','p','mean','lower','upper')]

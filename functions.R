@@ -168,7 +168,7 @@ stanCodeWithMod<-'
   transformed parameters{
     vector[nRep] beta;
     for(ii in 1:nRep){
-      beta[ii]=alleleVirus[virus[ii],allele[ii]]+virusMeans[virus[ii]];
+      beta[ii]=alleleMeans[allele[ii]]+alleleSd*exp(sdMult[allele[ii]])*alleleGroup[allele[ii],virusGroup[virus[ii]]]+virusMeans[virus[ii]]+alleleVirus[virus[ii],allele[ii]]*sdWithinSpecies;
       if(experiment[ii]!=1)beta[ii]=beta[ii]+virusExperiment[virus[ii],experiment[ii]-1];
       if(modification[ii]!=1)beta[ii]=beta[ii]+virusMod[virus[ii],modification[ii]-1];
       beta[ii]=logit(fmin(inv_logit(beta[ii])+background[ii],.9999));
@@ -176,15 +176,14 @@ stanCodeWithMod<-'
   }
   model {
     rep~normal(beta,repSd);
-    for(ii in 1:nVirus)alleleVirus[ii,]~normal(alleleGroup[,virusGroup[ii]],sdWithinSpecies);
-    for(ii in 1:nAllele)alleleGroup[ii,]~normal(alleleMeans[ii],alleleSd*exp(sdMult[ii]));
+    for(ii in 1:nVirus)alleleVirus[ii,]~normal(0,1);
+    for(ii in 1:nAllele)alleleGroup[ii,]~normal(0,1);
     for(ii in 2:nExperiment)virusExperiment[,ii-1]~normal(0,5);
     repSd~gamma(1,.1);
     alleleSd~gamma(1,.1);
     sdMult~normal(0,.693); //log(2)
     background~normal(backMean,backSd);
     alleleMeans~normal(-2,2.5);
-    //alleleMeansMean~normal(-2,5);
     virusMeans~normal(0,2);
     sdWithinSpecies~gamma(1,.1);
     modMeans~normal(0,5);
@@ -225,30 +224,51 @@ stanCode<-'
   transformed parameters{
     vector[nRep] beta;
     for(ii in 1:nRep){
-      beta[ii]=alleleVirus[virus[ii],allele[ii]]+virusMeans[virus[ii]];
+      beta[ii]=alleleMeans[allele[ii]]+alleleSd*exp(sdMult[allele[ii]])*alleleGroup[allele[ii],virusGroup[virus[ii]]]+virusMeans[virus[ii]]+alleleVirus[virus[ii],allele[ii]]*sdWithinSpecies;
       if(experiment[ii]!=1)beta[ii]=beta[ii]+virusExperiment[virus[ii],experiment[ii]-1];
       beta[ii]=logit(fmin(inv_logit(beta[ii])+background[ii],.9999));
     }
   }
   model {
     rep~normal(beta,repSd);
-    for(ii in 1:nVirus)alleleVirus[ii,]~normal(alleleGroup[,virusGroup[ii]],sdWithinSpecies);
-    for(ii in 1:nAllele)alleleGroup[ii,]~normal(alleleMeans[ii],alleleSd*exp(sdMult[ii]));
+    for(ii in 1:nVirus)alleleVirus[ii,]~normal(0,1);
+    for(ii in 1:nAllele)alleleGroup[ii,]~normal(0,1);
     for(ii in 2:nExperiment)virusExperiment[,ii-1]~normal(0,5);
     repSd~gamma(1,.1);
     alleleSd~gamma(1,.1);
     sdMult~normal(0,.693); //log(2)
     background~normal(backMean,backSd);
     alleleMeans~normal(-2,2.5);
-    //alleleMeansMean~normal(-2,5);
     virusMeans~normal(0,2);
     sdWithinSpecies~gamma(1,.1);
   }
 '
 modAllele <- stan_model(model_code = stanCode)
 
-getDiffs<-function(fit){
+convertMat<-function(mat,fit){
+  for(ii in fit$alleleId){
+    for(jj in fit$groupId){
+      #alleleMeans[allele[ii]]+alleleSd*exp(sdMult[allele[ii]])*alleleGroup[allele[ii],virusGroup[virus[ii]]]
+      thisVar<-sprintf('alleleGroup[%d,%d]',ii,jj)
+      thisMean<-sprintf('alleleMeans[%d]',ii)
+      thisSd<-sprintf('alleleSd')
+      thisScale<-sprintf('sdMult[%d]',ii)
+      mat[,thisVar]<-mat[,thisMean]+mat[,thisVar]*mat[,thisSd]*exp(mat[,thisScale])
+    }
+    for(jj in fit$virusId){
+      #alleleGroup[allele[ii]gruop[virus[ii]]alleleVirus[virus[ii],allele[ii]]*sdWithinSpecies
+      thisVar<-sprintf('alleleVirus[%d,%d]',jj,ii)
+      thisMean<-sprintf('alleleGroup[%d,%d]',ii,fit$virusGroup[jj])
+      thisSd<-sprintf('sdWithinSpecies')
+      mat[,thisVar]<-mat[,thisMean]+mat[,thisVar]*mat[,thisSd]
+    }
+  }
+  mat
+}
+
+getDiffs<-function(fit,convert=FALSE){
   mat<-as.matrix(fit$fit)
+  if(convert)mat<-convertMat(mat,fit)
   diffs<-do.call(rbind,parallel::mclapply(c('General'=-99,fit$virusId),function(vir){
     do.call(rbind,lapply(fit$alleleId,function(xx){
       out<-data.frame(do.call(rbind,lapply(fit$alleleId,function(yy){
