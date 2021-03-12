@@ -3,7 +3,6 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
 plotFit<-function(fit,means){
-  #virLookup, alleleLookup
   mat<-as.matrix(fit$fit)
   diffs<-do.call(rbind,lapply(fit$virusId,function(vir){
     do.call(rbind,lapply(fit$alleleId,function(xx){
@@ -65,9 +64,6 @@ plotAlleles<-function(fit,xRange=quantile(allGroup,c(.005,.995)),isT=TRUE,expFun
       thisVirus<-mat[,sprintf('alleleVirus[%d,%d]',thisVirusIds,jj),drop=FALSE]
       virDense<-apply(thisVirus,2,density)
       plot(1,1,type='n',xaxt='n',yaxt='n',xlab='',ylab='',xlim=expFunc(xRange),ylim=yLim,log='x',yaxs='i')
-      #plot(1,1,type='n',xaxt='n',yaxt='n',xlab='',ylab='',xlim=expFunc(xRange),ylim=c(-yLim[2],yLim[2]),log='x')
-      #polygon(expFunc(thisDat$x),thisDat$y,col='#0000FF33')
-      #lapply(virDense,function(xx)polygon(expFunc(xx$x),-xx$y,col='#00000022',border='#00000011'))
       lapply(virDense,function(xx)polygon(expFunc(xx$x),xx$y,col='#00000011',border='#00000022'))
       polygon(expFunc(plusSd[[thisCol]]$x),plusSd[[thisCol]]$y,col='#FF000099')
       polygon(expFunc(comboDenses[[jj]]$x),comboDenses[[jj]]$y,lty=2)
@@ -121,7 +117,6 @@ crIMean<-function(xx,crI=c(.025,.975))c(quantile(xx,crI),mean(xx),mean(xx<0))
 
 plotFunc<-function(tmp){
   breaks<-seq(0,max(means),length.out=101)
-  #cols<-hcl.colors(100, "YlOrRd", rev = TRUE)
   cols<-colorRampPalette(c('white','#f7c252','#eb5500','#7d0025'))(100)
   image(1:ncol(tmp),1:nrow(tmp),t(tmp),xaxt='n',yaxt='n',ylab='',xlab='',breaks=breaks,col=cols)
   dnar::slantAxis(1,1:ncol(tmp),colnames(tmp))
@@ -248,7 +243,6 @@ modAllele <- stan_model(model_code = stanCode)
 convertMat<-function(mat,fit){
   for(ii in fit$alleleId){
     for(jj in fit$groupId){
-      #alleleMeans[allele[ii]]+alleleSd*exp(sdMult[allele[ii]])*alleleGroup[allele[ii],virusGroup[virus[ii]]]
       thisVar<-sprintf('alleleGroup[%d,%d]',ii,jj)
       thisMean<-sprintf('alleleMeans[%d]',ii)
       thisSd<-sprintf('alleleSd')
@@ -256,7 +250,6 @@ convertMat<-function(mat,fit){
       mat[,thisVar]<-mat[,thisMean]+mat[,thisVar]*mat[,thisSd]*exp(mat[,thisScale])
     }
     for(jj in fit$virusId){
-      #alleleGroup[allele[ii]gruop[virus[ii]]alleleVirus[virus[ii],allele[ii]]*sdWithinSpecies
       thisVar<-sprintf('alleleVirus[%d,%d]',jj,ii)
       thisMean<-sprintf('alleleGroup[%d,%d]',ii,fit$virusGroup[jj])
       thisSd<-sprintf('sdWithinSpecies')
@@ -275,10 +268,6 @@ getDiffs<-function(fit,convert=FALSE){
         if(xx==yy)stats<-c(0,0,0,.5)
         else if(vir==-99)stats<-crIMean(mat[,sprintf('alleleMeans[%d]',xx)]-mat[,sprintf('alleleMeans[%d]',yy)])
         else stats<-crIMean(mat[,sprintf('alleleVirus[%d,%d]',vir,xx)]-mat[,sprintf('alleleVirus[%d,%d]',vir,yy)])
-        #if(out[3]<0){
-          #tmp<-xx;xx<-yy;yy<-tmp
-          #stats<-crIMean(mat[,sprintf('alleleVirus[%d,%d]',vir,xx)]-mat[,sprintf('alleleVirus[%d,%d]',vir,yy)])
-        #}
         out<-data.frame('allele1'=xx,'allele2'=yy,'mean'=stats[3],'lower'=stats[1],'upper'=stats[2],'p'=stats[4],stringsAsFactors=FALSE)
         return(out)
       })))
